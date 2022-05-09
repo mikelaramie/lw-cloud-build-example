@@ -1,0 +1,31 @@
+steps:
+- id: 'Build Image'
+  name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:tag2', '.' ]
+
+- id: 'Lacework Scan'
+  name: 'lacework/lacework-inline-scanner'
+  env: 
+  - 'LW_SCANNER_SAVE_RESULTS=true'
+  - 'BUILD_ID=$BUILD_ID'
+  secretEnv: ['LW_ACCOUNT_NAME','LW_ACCESS_TOKEN']
+  args: 
+  - 'image'
+  - 'evaluate'
+  - 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image'
+  - 'tag2'
+  - '-i $BUILD_ID --fail-on-violation-exit-code 1 --critical-violation-exit-code 2 --high-violation-exit-code 3'
+
+- id: 'Push Image'
+  name: 'gcr.io/cloud-builders/docker'
+  args: [ 'push', 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:tag2']
+
+images:
+- 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:tag2'
+
+availableSecrets:
+  secretManager:
+  - versionName: projects/$PROJECT_ID/secrets/LW_ACCESS_TOKEN/versions/1
+    env: 'LW_ACCESS_TOKEN'
+  - versionName: projects/$PROJECT_ID/secrets/LW_ACCOUNT_NAME/versions/1
+    env: 'LW_ACCOUNT_NAME'
