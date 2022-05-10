@@ -1,10 +1,10 @@
 steps:
 - id: 'Build Image'
   name: 'gcr.io/cloud-builders/docker'
-  args: [ 'build', '-t', 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:tag2', '.' ]
+  args: [ 'build', '-t', 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:$TAG_NAME', '.' ]
 
 - id: 'Lacework Scan'
-  name: 'lacework/lacework-inline-scanner'
+  name: 'lacework/lacework-inline-scanner:latest'
   env: 
   - 'LW_SCANNER_SAVE_RESULTS=true'
   - 'BUILD_ID=$BUILD_ID'
@@ -13,19 +13,26 @@ steps:
   - 'image'
   - 'evaluate'
   - 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image'
-  - 'tag2'
-  - '-i $BUILD_ID --fail-on-violation-exit-code 1 --critical-violation-exit-code 2 --high-violation-exit-code 3'
+  - '$TAG_NAME'
+  - '-i=$BUILD_ID'
+  - '--registry=us-docker.pkg.dev'
+  # These options allow you to specify specific exit codes for violations of policy
+  - '--policy'
+  - '--fail-on-violation-exit-code=1'
+  - '--critical-violation-exit-code=2'
+  - '--high-violation-exit-code=3'
+  # See https://docs.lacework.com/integrate-inline-scanner#exit-codes-for-policy-violations for more options
 
 - id: 'Push Image'
   name: 'gcr.io/cloud-builders/docker'
-  args: [ 'push', 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:tag2']
+  args: [ 'push', 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:$TAG_NAME']
 
 images:
-- 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:tag2'
+- 'us-docker.pkg.dev/$PROJECT_ID/lw-cloud-build-demo/quickstart-image:$TAG_NAME'
 
 availableSecrets:
   secretManager:
-  - versionName: projects/$PROJECT_ID/secrets/LW_ACCESS_TOKEN/versions/1
+  - versionName: projects/$PROJECT_ID/secrets/LW_ACCESS_TOKEN/versions/2
     env: 'LW_ACCESS_TOKEN'
-  - versionName: projects/$PROJECT_ID/secrets/LW_ACCOUNT_NAME/versions/1
+  - versionName: projects/$PROJECT_ID/secrets/LW_ACCOUNT_NAME/versions/2
     env: 'LW_ACCOUNT_NAME'
